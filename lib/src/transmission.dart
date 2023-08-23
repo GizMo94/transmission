@@ -63,7 +63,7 @@ class Transmission {
       handler.next(options);
     }, onError: (DioError error, handler) async {
       if (error.response?.statusCode == 409) {
-        _dio.lock();
+        _dio.close();
         final options = error.requestOptions;
         // If the token has been updated, repeat directly.
         if (csrfToken != options.headers[csrfProtectionHeader]) {
@@ -83,14 +83,11 @@ class Transmission {
             onSendProgress: options.onSendProgress,
             queryParameters: options.queryParameters,
           );
-          _dio.unlock();
           handler.resolve(response);
         } on DioError catch (err) {
-          _dio.unlock();
           handler.reject(err);
         } catch (err) {
           print(err);
-          _dio.unlock();
           handler.reject(error);
         }
         return;

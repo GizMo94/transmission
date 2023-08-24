@@ -59,45 +59,48 @@ class Transmission {
         responseBody: true,
       ));
     }
-    _dio.interceptors.add(
-        InterceptorsWrapper(onRequest: (RequestOptions options, handler) async {
-      if (csrfToken != null) {
-        options.headers[csrfProtectionHeader] = csrfToken;
-      }
-      handler.next(options);
-    }, onError: (DioError error, handler) async {
-      if (error.response?.statusCode == 409) {
-        _dio.close();
-        final options = error.requestOptions;
-        // If the token has been updated, repeat directly.
-        if (csrfToken != options.headers[csrfProtectionHeader]) {
-          options.headers[csrfProtectionHeader] = csrfToken;
-        } else {
-          csrfToken = error.response!.headers[csrfProtectionHeader]!.first;
+
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        if (csrfToken != null) {
           options.headers[csrfProtectionHeader] = csrfToken;
         }
-        //repeat
-        try {
-          final response = await _tokenDio.request(
-            options.path,
-            options: options.toOptions(),
-            data: options.data,
-            cancelToken: options.cancelToken,
-            onReceiveProgress: options.onReceiveProgress,
-            onSendProgress: options.onSendProgress,
-            queryParameters: options.queryParameters,
-          );
-          handler.resolve(response);
-        } on DioError catch (err) {
-          handler.reject(err);
-        } catch (err) {
-          print(err);
-          handler.reject(error);
+        handler.next(options);
+      },
+      onError: (error, handler) async {
+        if (error.response?.statusCode == 409) {
+          try {
+            final options = error.requestOptions;
+
+            if (csrfToken != options.headers[csrfProtectionHeader]) {
+              options.headers[csrfProtectionHeader] = csrfToken;
+            } else {
+              csrfToken = error.response!.headers[csrfProtectionHeader]!.first;
+              options.headers[csrfProtectionHeader] = csrfToken;
+            }
+
+            final response = await _tokenDio.request(
+              options.path,
+              options: options.toOptions(),
+              data: options.data,
+              cancelToken: options.cancelToken,
+              onReceiveProgress: options.onReceiveProgress,
+              onSendProgress: options.onSendProgress,
+              queryParameters: options.queryParameters,
+            );
+
+            handler.resolve(response);
+          } on DioError catch (err) {
+            handler.reject(err);
+          } catch (err) {
+            print(err);
+            handler.reject(error);
+          }
+          return;
         }
-        return;
-      }
-      handler.next(error);
-    }));
+        handler.next(error);
+      },
+    ));
   }
 
   /// Documentation about the API at https://github.com/transmission/transmission/blob/master/extras/rpc-spec.txt
@@ -106,10 +109,10 @@ class Transmission {
   /// [enableLog] boolean to show http logs or not
   factory Transmission(
       {String? baseUrl,
-        String? proxyUrl,
-        bool enableLog = false,
-        String? username,
-        String? password}) {
+      String? proxyUrl,
+      bool enableLog = false,
+      String? username,
+      String? password}) {
     baseUrl ??= 'http://localhost:9091/transmission/rpc';
     Dio client = Dio(BaseOptions(
         baseUrl: proxyUrl == null

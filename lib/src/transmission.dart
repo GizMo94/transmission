@@ -282,6 +282,22 @@ class Transmission {
     _checkResults(_Response.fromJSON(results.data));
   }
 
+  Future<int> getFreeSpace(String path) async {
+    final results = await _dio.post('/',
+        data: _Request("free-space", arguments: {
+          'path': path,
+        }).toJSON());
+    final response = _Response.fromJSON(results.data);
+
+    _checkResults(response);
+
+    if (response.result == "success" && response.arguments != null) {
+      return response.arguments!['size-bytes'] as int;
+    } else {
+      throw Exception("Error getting free space: ${response.result}");
+    }
+  }
+
   void _checkResults(_Response response) {
     if (!response.isSuccess) {
       throw TransmissionException._(response);

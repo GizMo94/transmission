@@ -376,6 +376,7 @@ class Transmission {
       'rateUpload',
       'peersGettingFromUs',
       'peersSendingToUs',
+      'uploadRatio'
     ],
   }) async {
     final results = await _dio.post('/',

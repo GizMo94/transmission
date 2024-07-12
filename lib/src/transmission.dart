@@ -509,6 +509,8 @@ class Torrent {
 
   int? get status => _rawData['status'];
 
+  double? get ratio => _rawData['uploadRatio'];
+
   String get statusDescription {
     if (error != 0) {
       return 'Error';
